@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Co-Viewer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.0/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.6.347/build/pdf.min.js"></script>
     <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
@@ -18,6 +17,7 @@
     <div>
         <button id="prev-slide">Previous Slide</button>
         <button id="next-slide">Next Slide</button>
+        <button id="update_slide">Update Slide</button>
     </div>
     <canvas id="pdf-render"></canvas> <!-- Canvas for rendering PDF -->
     
