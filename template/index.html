@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Co-Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.6.347/build/pdf.min.js"></script>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+<body>
+    <h1 style="text-align:center;">Welcome to PDF Co-Viewer</h1>
+    <div class="form-group">
+        <label for="file">Select PDF File:</label>
+        <input type="file" id="file" accept=".pdf">
+    </div>
+    <div>
+        <button id="prev-slide">Previous Slide</button>
+        <button id="next-slide">Next Slide</button>
+    </div>
+    <canvas id="pdf-render"></canvas> <!-- Canvas for rendering PDF -->
+    
+    <script>
+        const socket = io("http://localhost:3030");
+        let pdfDoc = null,
+            pageNum = 1,
+            canvas = document.getElementById('pdf-render'),
+            ctx = canvas.getContext('2d');
+        document.getElementById('file').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const fileReader = new FileReader();
+                fileReader.onload = function() {
+                    const pdfData = new Uint8Array(this.result);
+                    pdfjsLib.getDocument(pdfData).promise.then(pdf => {
+                        pdfDoc = pdf;
+                        renderPage(pageNum);
+                    });
+                };
+                fileReader.readAsArrayBuffer(file);
+            }
+        });
+
+        function renderPage(num) {
+            pdfDoc.getPage(num).then(page => {
+                const viewport = page.getViewport({ scale: 1 });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderCtx = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                page.render(renderCtx);
+            });
+        }
+
+        document.getElementById('next-slide').addEventListener('click', () => {
+            if (pageNum < pdfDoc.numPages) {
+                pageNum++;
+                socket.emit('change_slide', { slide: pageNum });
+                console.log(`Navigated to slide ${pageNum}`);
+            }
+        });
+
+        document.getElementById('prev-slide').addEventListener('click', () => {
+            if (pageNum > 1) {
+                pageNum--;
+                socket.emit('change_slide', { slide: pageNum });
+                console.log(`Navigated to slide ${pageNum}`);
+            }
+        });
+
+        socket.on('update_slide', data => {
+            pageNum = data.slide;
+            renderPage(pageNum);
+            console.log(`Updated slide to ${pageNum} from server`);
+        });
+
+        // Handle connection and disconnection events
+        socket.on("connect", () => {
+            console.log("Connected to server");
+        });
+        socket.on("disconnect", () => {
+            console.log("Disconnected from server");
+        });
+    </script>
+</body>
+</html>
